@@ -84,40 +84,40 @@ class SnakeEngine:
         print(f"\0.6.26{output}\nScore: {self.score} | Game Over: {self.game_over}\n")
 
     def get_state(self):
-        x, y = self.snake[0]
-        dx, dy = self.direction
+        # x, y = self.snake[0]
+        # dx, dy = self.direction
 
-        danger_straight = 0 if 0 <= x + dx <= self.width and 0 <= y + dy <= self.height else 1
+        # danger_straight = 0 if 0 <= x + dx <= self.width and 0 <= y + dy <= self.height else 1
 
-        lmap = {
-            (1, 0): (0,1),
-            (-1, 0): (0, -1),
-            (0, -1): (1,0),
-            (0, 1): (-1,0),
-        }
+        # lmap = {
+        #     (1, 0): (0,1),
+        #     (-1, 0): (0, -1),
+        #     (0, -1): (1,0),
+        #     (0, 1): (-1,0),
+        # }
 
-        ldx, ldy = lmap[self.direction]
+        # ldx, ldy = lmap[self.direction]
 
-        danger_left = 0 if 0 <= x + ldx <= self.width and 0 <= y + ldy <= self.height else 1
+        # danger_left = 0 if 0 <= x + ldx <= self.width and 0 <= y + ldy <= self.height else 1
 
-        rmap = {
-            (1, 0): (0,-1),
-            (-1, 0): (0, 1),
-            (0, -1): (-1,0),
-            (0, 1): (1,0),
-        }
+        # rmap = {
+        #     (1, 0): (0,-1),
+        #     (-1, 0): (0, 1),
+        #     (0, -1): (-1,0),
+        #     (0, 1): (1,0),
+        # }
 
-        rdx, rdy = rmap[self.direction]
+        # rdx, rdy = rmap[self.direction]
 
-        danger_right = 0 if 0 <= x + rdx <= self.width and 0 <= y + rdy <= self.height else 1
+        # danger_right = 0 if 0 <= x + rdx <= self.width and 0 <= y + rdy <= self.height else 1
 
-        fx, fy = self.food
-        fdx, fdy = (-1 if fx - x < 0 else 0 if fx == x else 1, -1 if fy - y < 0 else 0 if fy == y else 1)
+        # fx, fy = self.food
+        # fdx, fdy = (-1 if fx - x < 0 else 0 if fx == x else 1, -1 if fy - y < 0 else 0 if fy == y else 1)
 
-        state = np.array([danger_straight, danger_left, danger_right, dx, dy, fdx, fdy], dtype='float32')
-        state = torch.tensor(state, dtype=torch.float32).flatten().unsqueeze(0)
+        # state = np.array([danger_straight, danger_left, danger_right, dx, dy, fdx, fdy], dtype='float32')
+        # state = torch.tensor(state, dtype=torch.float32).flatten().unsqueeze(0)
 
-        """
+        
         board = [[0 for _ in range(self.width)] for _ in range(self.height)]
         for i, (sx, sy) in enumerate(self.snake):
             board[sy][sx] = 0.5 if i == 0 else -1
@@ -128,9 +128,9 @@ class SnakeEngine:
         board = torch.tensor(board, dtype=torch.float32).flatten().unsqueeze(0)
 
         return (board, (fy, fx), self.snake[0])
-        """
+        
 
-        return state
+        #return state
 
 if __name__ == "__main__":
     # Quick demo loop
