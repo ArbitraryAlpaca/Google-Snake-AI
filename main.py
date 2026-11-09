@@ -7,6 +7,7 @@ import random
 from collections import deque
 from collections import namedtuple
 from Environment import Env
+import snake_engine
 
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
@@ -30,13 +31,9 @@ class DQNAgent:
         self._build_nn_model()
 
     def _build_nn_model(self):
-        self.model = nn.Sequential(nn.Linear(self.state_size, 128),
+        self.model = nn.Sequential(nn.Linear(self.state_size, 256),
                                    nn.ReLU(),
-                                   nn.Linear(128, 128),
-                                   nn.ReLU(),
-                                   nn.Linear(128, 64),
-                                   nn.ReLU(),
-                                   nn.Linear(64, self.action_size)
+                                   nn.Linear(256, self.action_size)
                                    )
         self.loss_fn = nn.SmoothL1Loss()
         self.optimizer = torch.optim.Adam(
@@ -102,19 +99,19 @@ class DQNAgent:
 
 
 EPISODES = 5000
-batch_size = 64
+batch_size = 16
 init_replay_memory_size = 500
 
 
 if __name__ == "__main__":
-    time.sleep(2)
-    env = Env
+    engi = snake_engine.SnakeEngine()
+    env = Env(engi)
     agent = DQNAgent(env)
     state, apple_loc, head_loc = env.reset()
     state = state.float()
     #state = np.reshape(state, [1, agent.state_size])
-    best = -1
-    #agent.load_weights("snake2.pt")
+    best = -1000
+    #agent.load_weights("snake.pt")
     for i in range(init_replay_memory_size):
         action = agent.choose_action(state)
         next_state, reward, done, apple_loc, head_loc = env.step(action, apple_loc, head_loc)
@@ -129,7 +126,7 @@ if __name__ == "__main__":
             state = next_state
 
     total_rewards, losses = [], []
-    total_apples,total_lengths = [],[]
+    total_apples,total_lengths = [], []
     for e in range(EPISODES):
         state, apple_loc, head_loc = env.reset()
         state = state.float()
@@ -145,7 +142,7 @@ if __name__ == "__main__":
             agent.remember(Transition(state, action, reward, next_state, done))
             state = next_state
             episode_reward += reward
-            if reward == 100:
+            if reward == 10:
                 episode_apples+=1
 
             if len(agent.memory) >= batch_size:
@@ -186,7 +183,7 @@ if __name__ == "__main__":
 
         if episode_reward > best:
             best = episode_reward
-            agent.save_weights("snake.pt")
+            agent.save_weights("snake1.pt")
 
 
 
