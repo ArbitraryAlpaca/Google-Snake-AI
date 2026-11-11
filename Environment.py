@@ -29,11 +29,11 @@ class Env:
                 if pixel[0] == 231 and pixel[1] == 71 and pixel[2] == 29: #pixel color is red
                     board[row][col] = 1 #setting board position of apple as 1
                     apple = (row,col)
-                elif np.array_equal(pixel,[78, 124, 246]) or np.array_equal(pixel,[77,123, 249]):
+                elif np.array_equal(pixel,[78, 124, 246]) or np.array_equal(pixel,[77,123,249]):
                     board[row][col] = 0.5
                     head = (row,col)
                 elif pixel[2] >= 190: #pixel color is blue
-                    board[row][col] = -1 #setting body of snake as -1
+                    board[row][col] = 0.3 #setting body of snake as 0.3
 
         return board, apple, head
 
