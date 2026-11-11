@@ -9,36 +9,47 @@ from collections import namedtuple
 from Environment import Env
 import snake_engine
 
+# 1. Properly set up the GPU device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+print(device.type)
+
 Transition = namedtuple('Transition', ('state', 'action', 'reward', 'next_state', 'done'))
 
 
 class DQNAgent:
     def __init__(
-            self, env, discount_factor=0.999, epsilon_greedy=1.0,
-            epsilon_min=0.01, epsilon_decay=0.9995, learning_rate=1e-3,
+            self,
+            env,
+            discount_factor=0.999,
+            epsilon_greedy=1.0,
+            epsilon_min=0.001,
+            epsilon_decay=0.998,
+            learning_rate=1e-3,
             max_memory_size=100000
     ):
         self.env = env
-
         self.state_size = env.state_size
         self.action_size = env.num_actions
         self.memory = deque(maxlen=max_memory_size)
         self.gamma = discount_factor
-        self.epsilon = epsilon_greedy #1.0
+        self.epsilon = epsilon_greedy
         self.epsilon_min = epsilon_min
         self.epsilon_decay = epsilon_decay
         self.lr = learning_rate
         self._build_nn_model()
 
     def _build_nn_model(self):
-        self.model = nn.Sequential(nn.Linear(self.state_size, 256),
-                                   nn.ReLU(),
-                                   nn.Linear(256, self.action_size)
-                                   )
+        # 2. Push the model to the GPU
+        self.model = nn.Sequential(
+            nn.Linear(self.state_size, 256),
+            nn.ReLU(),
+            nn.Linear(256, 64),
+            nn.ReLU(),
+            nn.Linear(64, self.action_size)
+        ).to(device)
+
         self.loss_fn = nn.SmoothL1Loss()
-        self.optimizer = torch.optim.Adam(
-            self.model.parameters(), self.lr
-        )
+        self.optimizer = torch.optim.Adam(self.model.parameters(), self.lr)
 
     def remember(self, transition):
         self.memory.append(transition)
@@ -46,46 +57,36 @@ class DQNAgent:
     def choose_action(self, state):
         if np.random.rand() <= self.epsilon:
             return np.random.choice(self.action_size)
+
         with torch.no_grad():
-            q_values = self.model(state)[0]
+            state_tensor = state.flatten().unsqueeze(0).to(device)
+            q_values = self.model(state_tensor)[0]
             return torch.argmax(q_values).item()
 
     def _learn(self, batch_samples):
-        batch_states, batch_targets = [], []
+        states = torch.stack([t.state.flatten() for t in batch_samples]).to(device)
+        actions = torch.tensor([t.action for t in batch_samples], dtype=torch.long, device=device).unsqueeze(1)
+        rewards = torch.tensor([t.reward for t in batch_samples], dtype=torch.float32, device=device)
+        next_states = torch.stack([t.next_state.flatten() for t in batch_samples]).to(device)
+        dones = torch.tensor([t.done for t in batch_samples], dtype=torch.float32, device=device)
 
-        for transition in batch_samples:
-            s, a, r, next_s, done = transition
-            s_flat = s.flatten()
-            next_s_flat = next_s.flatten()
+        current_q = self.model(states).gather(1, actions).squeeze(1)
 
-            with torch.no_grad():
-                if done:
-                    target = r
-                else:
-                    pred = self.model(next_s_flat.unsqueeze(0))[0]
-                    target = r + self.gamma * pred.max().item()
+        with torch.no_grad():
+            next_q = self.model(next_states).max(1)[0]
+            target_q = rewards + (1.0 - dones) * self.gamma * next_q
 
-            target_all = self.model(s_flat.unsqueeze(0))[0].clone()
-            target_all[a] = target
-
-            batch_states.append(s_flat)
-            batch_targets.append(target_all)
-
-        #self._adjust_epsilon()
-
-        states_tensor = torch.stack(batch_states)  # Shape: (batch_size, 255)
-        targets_tensor = torch.stack(batch_targets)  # Shape: (batch_size, action_size)
+        loss = self.loss_fn(current_q, target_q)
 
         self.optimizer.zero_grad()
-        pred = self.model(states_tensor)
-        loss = self.loss_fn(pred, targets_tensor)
         loss.backward()
         self.optimizer.step()
 
         return loss.item()
 
     def _adjust_epsilon(self):
-        self.epsilon = max(self.epsilon_min, self.epsilon*self.epsilon_decay)
+        self.epsilon = max(self.epsilon_min, self.epsilon * self.epsilon_decay)
+
     def replay(self, batch_size):
         samples = random.sample(self.memory, batch_size)
         return self._learn(samples)
@@ -94,12 +95,12 @@ class DQNAgent:
         torch.save(self.model.state_dict(), filepath)
 
     def load_weights(self, filepath):
-        state_dict = torch.load(filepath)
+        state_dict = torch.load(filepath, map_location=device)
         self.model.load_state_dict(state_dict)
 
 
-EPISODES = 5000
-batch_size = 16
+EPISODES = 50_000
+batch_size = 256
 init_replay_memory_size = 500
 
 
@@ -109,8 +110,10 @@ if __name__ == "__main__":
     agent = DQNAgent(env)
     state, apple_loc, head_loc = env.reset()
     state = state.float()
+
     #state = np.reshape(state, [1, agent.state_size])
-    best = -1000
+    best = 25
+    highscore = 0
     #agent.load_weights("snake.pt")
     for i in range(init_replay_memory_size):
         action = agent.choose_action(state)
@@ -179,35 +182,9 @@ if __name__ == "__main__":
             f"Steps: {i + 1}, "
             f"Reward: {episode_reward}, "
             f"Epsilon: {agent.epsilon:.3f}"
+            f"Best: {highscore}"
         )
 
         if episode_reward > best:
             best = episode_reward
             agent.save_weights("snake1.pt")
-
-
-
-
-
-
-# class Agent:
-#     def run(self, is_training=True):
-#         time.sleep(5)
-#         i = 0
-#         prev_state = np.array([-1])
-#         action = 0
-#         apple_loc = (-1, -1)
-#         while True:
-#             reward, apple_loc, prev_state = Env.step(i,action,apple_loc)
-#
-#             with open(fr".\Boards\board{i}.txt","w") as file:
-#                 file.write(f"{str(prev_state)}\n {str(apple_loc)}\n {str(reward)}")
-#
-#             if prev_state.size == 0:
-#                 print("Ending")
-#                 return
-#             #current_board = torch.tensor(prev_state, dtype=torch.float32).flatten().unsqueeze(0)
-#             i += 1
-#
-#np.save('myarray.npy', image)
-#image = np.load('myarray.npy',mmap_mode=None)
