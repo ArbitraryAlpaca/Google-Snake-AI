@@ -2,6 +2,9 @@ import numpy as np
 from collections import deque
 
 class Simulation:
+    head_val = 0.5
+    body_val = 0.3
+    apple_val = 1
     def __init__(self):
         self.rows, self.cols = 15,17
         self.board = np.zeros((self.rows,self.cols), dtype='float32')
@@ -15,15 +18,17 @@ class Simulation:
     def set_snake(self):
         self.board = np.zeros((self.rows,self.cols), dtype='float32')
         for coords in self.snake_body:
-            self.board[coords[0]][coords[1]] = 0.3
-        self.board[self.snake_head[0]][self.snake_head[1]] = 0.5
-        self.board[self.apple[0]][self.apple[1]] = 1.0
+            self.board[coords[0]][coords[1]] = self.body_val
+
+        self.board[self.snake_head[0]][self.snake_head[1]] = self.head_val
+        self.board[self.apple[0]][self.apple[1]] = self.apple_val
 
     def change_apple(self):
         i,j = np.random.randint(0,15), np.random.randint(0,17)
         while self.board[i][j] != 0.0:
             i,j = np.random.randint(0,15), np.random.randint(0,17)
-        self.board[i][j] = 1.0
+
+        self.board[i][j] = self.apple_val
         return i,j
 
     def crashed(self, coordinates):
@@ -56,10 +61,9 @@ class Simulation:
 
         self.snake_body.appendleft(self.snake_head)
         self.snake_head = new_head
-        print(self.snake_body)
         self.set_snake()
 
-        return self.board, self.snake_head, self.apple
+        return self.board, self.apple, self.snake_head
 
 
 if __name__ == '__main__':
@@ -67,5 +71,6 @@ if __name__ == '__main__':
     i = ""
     while(i != 'e'):
         print(sim.board)
+        print(sim.apple, sim.snake_head)
         i = input()
         sim.move(i)

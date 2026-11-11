@@ -102,19 +102,20 @@ class DQNAgent:
 
 
 EPISODES = 5000
-batch_size = 64
+batch_size = 16
 init_replay_memory_size = 500
 
 
 if __name__ == "__main__":
-    time.sleep(2)
-    env = Env
+    #time.sleep(2)
+    file = open("output.txt", 'a')
+    env = Env()
     agent = DQNAgent(env)
     state, apple_loc, head_loc = env.reset()
     state = state.float()
     #state = np.reshape(state, [1, agent.state_size])
     best = -1
-    #agent.load_weights("snake2.pt")
+    #agent.load_weights("snake.pt")
     for i in range(init_replay_memory_size):
         action = agent.choose_action(state)
         next_state, reward, done, apple_loc, head_loc = env.step(action, apple_loc, head_loc)
@@ -145,7 +146,7 @@ if __name__ == "__main__":
             agent.remember(Transition(state, action, reward, next_state, done))
             state = next_state
             episode_reward += reward
-            if reward == 100:
+            if reward == 200:
                 episode_apples+=1
 
             if len(agent.memory) >= batch_size:
@@ -153,13 +154,6 @@ if __name__ == "__main__":
                 episode_losses.append(loss)
 
             if done:
-                # total_rewards.append(i)
-                # with open("output.txt", "a") as file:
-                #     file.write(f'Episode: {e}/{EPISODES}, Total steps: {i}, Total reward: {episode_reward}, {best}\n')
-                # print(f'Episode: {e}/{EPISODES}, Total steps: {i}, Total reward: {episode_reward}, {best}')
-                # if episode_reward > best:
-                #     best = episode_reward
-                #     agent.save_weights("snake2.pt")
                 break
         total_rewards.append(episode_reward)
         total_lengths.append(i+1)
@@ -169,13 +163,11 @@ if __name__ == "__main__":
         #losses.append(loss)
         losses.append(avg_loss)
         agent._adjust_epsilon()
-        with open("output.txt", "a") as file:
-            file.write( f"Episode: {e + 1}/{EPISODES}, "
-            f"Apples: {episode_apples}, "
-            f"Steps: {i + 1}, "
-            f"Reward: {episode_reward}, "
-            f"Epsilon: {agent.epsilon:.3f}\n"
-        )
+        file.write( f"Episode: {e + 1}/{EPISODES}, "
+                    f"Apples: {episode_apples}, "
+                    f"Steps: {i + 1}, "
+                    f"Reward: {episode_reward}, "
+                    f"Epsilon: {agent.epsilon:.3f}\n")
         print(
             f"Episode: {e + 1}/{EPISODES}, "
             f"Apples: {episode_apples}, "
@@ -186,7 +178,8 @@ if __name__ == "__main__":
 
         if episode_reward > best:
             best = episode_reward
-            agent.save_weights("snake.pt")
+            agent.save_weights("snake2.pt")
+    file.close()
 
 
 
