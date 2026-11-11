@@ -1,1 +1,5 @@
 *.venv
+*.pt
+output.txt
+output1.txt
+rand.py
