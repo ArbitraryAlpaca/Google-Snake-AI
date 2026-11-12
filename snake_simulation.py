@@ -6,27 +6,26 @@ class Simulation:
     body_val = 0.3
     apple_val = 1
     def __init__(self):
-        self.rows, self.cols = 15,17
+        self.rows, self.cols = 15, 17
         self.board = np.zeros((self.rows,self.cols), dtype='float32')
-        self.apple = self.change_apple()
-        self.snake_head = (7,3)
-        self.snake_body = deque([(7,2), (7,1)])
-        self.direction = (0,1)
-        self.actions = {'': self.direction, 'right': (0,1), 'left': (0,-1), 'up':(-1,0), 'down':(1,0)}
+        self.apple = self.spawn_apple()
+        self.snake_head = (7, 3)
+        self.snake_body = deque([(7, 2), (7, 1)])
+        self.direction = (0, 1)
+        self.actions = {'': self.direction, 'right': (0, 1), 'left': (0, -1), 'up':(-1, 0), 'down':(1, 0)}
         self.set_snake()
 
     def set_snake(self):
-        self.board = np.zeros((self.rows,self.cols), dtype='float32')
         for coords in self.snake_body:
             self.board[coords[0]][coords[1]] = self.body_val
 
         self.board[self.snake_head[0]][self.snake_head[1]] = self.head_val
         self.board[self.apple[0]][self.apple[1]] = self.apple_val
 
-    def change_apple(self):
-        i,j = np.random.randint(0,15), np.random.randint(0,17)
+    def spawn_apple(self):
+        i,j = np.random.randint(0,self.rows), np.random.randint(0,self.cols)
         while self.board[i][j] != 0.0:
-            i,j = np.random.randint(0,15), np.random.randint(0,17)
+            i,j = np.random.randint(0,self.rows), np.random.randint(0,self.cols)
 
         self.board[i][j] = self.apple_val
         return i,j
@@ -34,13 +33,13 @@ class Simulation:
     def crashed(self, coordinates):
         if coordinates[0] < 0 or coordinates[1] < 0 or coordinates[0] >= self.rows or coordinates[1] >= self.cols:
             return True
-        if self.board[coordinates[0]][coordinates[1]] == 0.3:
+        if self.board[coordinates[0]][coordinates[1]] == self.body_val:
             return True
         return False
 
     def consumed_apple(self, coordinates):
-        if self.board[coordinates[0]][coordinates[1]] == 1.0:
-            self.apple = self.change_apple()
+        if self.board[coordinates[0]][coordinates[1]] == self.apple_val:
+            self.apple = self.spawn_apple()
             return True
         return False
 
@@ -57,8 +56,10 @@ class Simulation:
             return np.array([]), (-1, -1), (-1, -1)
 
         if not self.consumed_apple(new_head):
-            self.snake_body.pop()
+            tail = self.snake_body.pop()
+            self.board[tail[0]][tail[1]] = 0.0
 
+        self.board[self.snake_body[-1][0]][self.snake_body[-1][1]] = 0.0
         self.snake_body.appendleft(self.snake_head)
         self.snake_head = new_head
         self.set_snake()

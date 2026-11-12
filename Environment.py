@@ -73,12 +73,7 @@ class Env:
             (0,-1): [0,0,1,0], #left
             (0,1):[0,0,0,1] #right
         }
-        direct = {
-            'up': [1, 0, 0, 0],  # up
-            'down': [0, 1, 0, 0],  # down
-            'left': [0, 0, 1, 0],  # left
-            'right': [0, 0, 0, 1]  # right
-        }
+
         movement = (
             snake_head[0] - prev_head[0],
             snake_head[1] - prev_head[1]
@@ -104,19 +99,4 @@ class Env:
         cur_state = np.concatenate([cur_state.flatten(), direction.flatten()])
 
         return torch.tensor(cur_state, dtype=torch.float32).flatten().unsqueeze(0), cur_apple, head
-
-if __name__ == "__main__":
-    time.sleep(2)
-    h = Env.step(0,(-1,-1))[-1]
-    print(h)
-    h = Env.step(3, (-1, -1),1)[-1]
-    print(h)
-    h = Env.step(2, (-1, -1),2)[-1]
-    print(h)
-    h = Env.step(3, (-1, -1),3)[-1]
-    print(h)
-    h = Env.step(2, (-1, -1),4)[-1]
-    print(h)
-    h = Env.step(3, (-1, -1),5)[-1]
-    print(h)
 
