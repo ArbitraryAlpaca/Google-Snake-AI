@@ -5,22 +5,31 @@ import time
 from snake_simulation import Simulation
 
 class Env:
-    sim = Simulation()
-    direction = [0,0,0,1]
-    num_actions = 5
-    state_size = 259
-    @staticmethod
-    def __state_from_image(state, ROWS=15, COLS=17):
+
+    def __init__(self):
+        self.sim = Simulation()
+        self.direction = [0, 0, 0, 1] #starting direction of snake
+
+        self.num_actions = 5
+        self.num_rows = 15
+        self.num_cols = 17
+        self.state_size = (self.num_rows * self.num_cols) + len(self.direction)
+
+        self.head_val = 0.5
+        self.body_val = -1
+        self.food_val = 1
+
+    def _state_from_image(self, state):
         height, width = state.shape[:2]
-        cell_h = height / ROWS
-        cell_w = width / COLS
+        cell_h = height / self.num_rows
+        cell_w = width / self.num_cols
 
         apple = (-1,-1)
         head = (-1,-1)
-        board = np.zeros((ROWS, COLS), dtype='float32')
+        board = np.zeros((self.num_rows, self.num_cols), dtype='float32')
 
-        for row in range(ROWS):
-            for col in range(COLS):
+        for row in range(self.num_rows):
+            for col in range(self.num_cols):
                 #determine center of each cell
                 x = int((col + 0.5) * cell_w)
                 y = int((row + 0.5) * cell_h)
@@ -30,13 +39,13 @@ class Env:
                     return np.array([]), (-1, -1), (-1,-1)
 
                 if pixel[0] == 231 and pixel[1] == 71 and pixel[2] == 29: #pixel color is red
-                    board[row][col] = 1 #setting board position of apple as 1
+                    board[row][col] = self.food_val
                     apple = (row,col)
                 elif np.array_equal(pixel,[78, 124, 246]) or np.array_equal(pixel,[77,123,249]):
-                    board[row][col] = 0.5
+                    board[row][col] = self.head_val
                     head = (row,col)
                 elif pixel[2] >= 190: #pixel color is blue
-                    board[row][col] = 0.3 #setting body of snake as 0.3
+                    board[row][col] = self.body_val
 
         return board, apple, head
 
@@ -47,26 +56,27 @@ class Env:
         # if action != 0:
         #     pyautogui.press(actions[action_choice])
         #image = np.array(pyautogui.screenshot(fr'.\Screenshot\currentBoard.png', region=screen_region))# image[y][x] (height (y) = 660, width (x) = 748)
-        cur_state, cur_apple, snake_head = self.sim.move(actions[action_choice]) #Env.__state_from_image(image)
 
-
+        cur_state, cur_apple, snake_head = self.sim.move(actions[action_choice]) #self._state_from_image(image)
         # debug statement
         # with open("board.txt", "a") as file:
         #     file.write(f"{cur_state}\n{cur_apple} {snake_head}\n\n")
+
         if cur_state.size == 0:
             reward = -100
             done = True
-            cur_state = np.zeros((15,17),dtype='float32')
+            cur_state = self.sim.board.copy()#np.zeros((15,17),dtype=np.float32)
         elif prev_apple != (-1, -1) and cur_apple != prev_apple:
             reward = 200
         else:
-            reward = 10
+            reward = -1
             old_dist = abs(prev_head[0] - prev_apple[0]) + abs(prev_head[1] - prev_apple[1])
             new_dist = abs(snake_head[0] - cur_apple[0]) + abs(snake_head[1] - cur_apple[1])
             if new_dist < old_dist:
-                reward +=5
+                reward +=2
             elif new_dist > old_dist:
-                reward -=5
+                reward -=2
+
         direction_map = {
             (-1,0): [1,0,0,0], #up
             (1,0): [0,1,0,0], #down
@@ -79,8 +89,8 @@ class Env:
             snake_head[1] - prev_head[1]
         )
 
-        self.direction = direction_map.get(movement) if abs(movement[0] + movement[1]) == 1 else self.direction
-        cur_direction = np.array(self.direction, dtype='float32')
+        self.direction = direction_map[movement] if abs(movement[0] + movement[1]) == 1 else self.direction
+        cur_direction = np.array(self.direction, dtype=np.float32)
 
         cur_state = np.concatenate([cur_state.flatten(), cur_direction.flatten()])
         return torch.tensor(cur_state, dtype=torch.float32).flatten().unsqueeze(0), reward, done, cur_apple, snake_head
@@ -90,7 +100,7 @@ class Env:
         self.sim = Simulation()
         screen_region = (576, 302, 748, 660)
         direction = np.array(
-            [0,0,0,1], dtype='float32'
+            [0,0,0,1], dtype=np.float32
         )
         #pyautogui.press('Enter')
         #time.sleep(2)
